@@ -1,0 +1,3 @@
+- URL do Kafka UI no host local: http://localhost:8080
+- Kafka está acessível no container pela porta: 9092
+- Kafka UI conecta ao Kafka via: kafka:9092 (nome do serviço dentro da rede Docker)
