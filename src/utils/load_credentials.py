@@ -13,5 +13,6 @@ def loadCredentials() -> dict:
         "password": db_config["password"],
         "database": db_config["database"],
         "openai_api_key": os.getenv("OPENAI_API_KEY"),
+        "bootstrap_servers":os.getenv("BOOTSTRAP_SERVERS"),
     }
     return credentials
