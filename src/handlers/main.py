@@ -22,28 +22,35 @@ customerExists=retrieveCustomerData(document=doc)
 if bool(customerExists)==False: # método bool(dict) é False para dicionário vazio: se o CPF informado não existe, prosseguir com cadastro
     isDocumentValid=validateDocument(doc)
     if isDocumentValid==True:
+        
         # solicita dados
         requestUserPersonalInfoAgentResponse=requestUserPersonalInfoAgent(productAttributes=desiredProduct)
         print(requestUserPersonalInfoAgentResponse)
 
-        userMsg=f"Oi, claro. Meu nome é zain bolt, meu cep é 15990010 nascido em 02/09/97"
+        userMsg=f"Oi, claro. Meu nome é zain bolt, meu cep é 15990010 nascido em 02/09/97. Email teste@teste.com.br"
         gatherUserDataAgentResponse=gatherUserDataAgent(productAttributes=desiredProduct,userMsg=userMsg)
         userData=extractUserData(agentResponse=gatherUserDataAgentResponse)
         addressData=pycep_correios.get_address_from_cep(userData["cep"])
-        print(userData,addressData)
+
+        customerParams={
+            "documento":doc,
+            "nome":userData["nome_completo"],
+            "cep":userData["cep"],
+            "email":userData["email"],
+            "nascimento":userData["data_de_nascimento"],
+            "endereco_estado":addressData["uf"],
+            "endereco_cidade":addressData["cidade"],
+            "endereco_bairro":addressData["bairro"],
+            "endereco_logradouro":addressData["logradouro"]
+        }
+        print(customerParams)
+        print(registerCustomerData(customerParams))
     else:
-        print('nok')
+        # TODO: trazer agente informando que o documento inserido não é válido
+        pass
 else:
     # TODO: inserir os dados lidos diretamente base no prompt do agente
     pass
     
 # 4. Dados registrados ou rebuscados, prosseguir para oferta e compra
-
-addressData=pycep_correios.get_address_from_cep('15990010')
-addressData={
-    "cep":addressData["cep"],
-    "endereco_estado":addressData["uf"],
-    "endereco_cidade":addressData["cidade"],
-    "endereco_bairro":addressData["bairro"],
-    "endereco_logradouro":addressData["logradouro"],
-}
+# TODO

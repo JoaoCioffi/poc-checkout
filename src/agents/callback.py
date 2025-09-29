@@ -67,8 +67,9 @@ def requestUserPersonalInfoAgent(productAttributes:dict) -> str:
     - nome completo,
     - cep,
     - data de nascimento,
+    - email,
 
-    Peça todos esses dados (você pode usar esse parágrafo como exemplo: "preciso do seu nome completo, CEP e data de nascimento por favor").
+    Peça todos esses dados (você pode usar esse parágrafo como exemplo: "preciso do seu nome completo, CEP, data de nascimento e email por favor").
 
     Importante! Não comece por "Olá", pois você é a segunda etapa (pós informe do CPF pelo usuário), comece por "obrigado por informar". Você deve interagir normalmente
     como continuação das etapas do processo. Use sempre linguagem humana, em português PT-BR.
@@ -106,6 +107,7 @@ def gatherUserDataAgent(productAttributes:dict,userMsg:str,retry=None) -> str:
     - nome completo: <nome informado aqui>;
     - cep: <cep informado aqui>;
     - data de nascimento: <data de nascimento informada aqui>;
+    - email: <email informado aqui>;
     ```
     
     Lembre-se que o usuário irá enviar isso através de um chat whatsapp, portanto ele poderá colocar informações ou palavras, até mesmo dados irrelevantes,
