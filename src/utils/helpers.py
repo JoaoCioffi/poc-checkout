@@ -3,15 +3,12 @@ import re
 def validateDocument(document:str) -> bool:
     """
     Valida um número de CPF brasileiro.
-
     A função primeiro limpa o input, removendo qualquer caractere não numérico.
     Em seguida, verifica se o CPF tem 11 dígitos e se não é uma sequência de 
     dígitos repetidos. Por fim, aplica o algoritmo de validação dos dígitos 
     verificadores para confirmar a validade do documento.
-
     Args:
         document (str): O CPF a ser validado, podendo conter pontos, traços ou espaços.
-
     Returns:
         bool: True se o CPF for válido, False caso contrário.
     """
@@ -47,10 +44,8 @@ def validateDocument(document:str) -> bool:
 def extractUserData(agentResponse:str) -> dict:
     """
     Extrai o conteúdo do bloco userdata de uma resposta de LLM e retorna um dicionário.
-    
     Args:
         agent_response (str): Resposta completa do agente contendo o bloco userdata
-        
     Returns:
         dict: Dicionário com os campos extraídos, ou None se não encontrado
     """
@@ -75,3 +70,38 @@ def extractUserData(agentResponse:str) -> dict:
         result[clean_name]=field_value.strip()
     
     return result
+
+def extractSellerAgentText(output:str) -> str:
+    """
+    Extrai o texto da mensagem do agente vendedor, removendo o bloco productoffer.
+    Args:
+        output: String completa retornada pelo LLM
+    Returns:
+        Texto da mensagem do agente sem o bloco productoffer
+    """
+    # Remove o bloco productoffer (incluindo as marcações ``` e o conteúdo)
+    pattern=r'```productoffer.*?```'
+    agent_text=re.sub(pattern,'',output,flags=re.DOTALL)
+    # Remove espaços em branco extras no final
+    return agent_text.strip()
+
+
+def extractProductOffer(output:str) -> dict:
+    """
+    Extrai os dados da oferta do produto do bloco productoffer.
+    Args:
+        output: String completa retornada pelo LLM
+    Returns:
+        Dicionário com 'price' (float) e 'discount' (int), ou None se não encontrado
+    """
+    # Padrão para capturar o conteúdo do bloco productoffer
+    pattern=r'```productoffer\s*\n\s*-\s*([\d.]+),\s*\n\s*-\s*(\d+),\s*\n```'
+    match=re.search(pattern, output)
+    if match:
+        price=float(match.group(1))
+        discount=int(match.group(2))
+        return {
+            'price': price,
+            'discount': discount
+        }
+    return None

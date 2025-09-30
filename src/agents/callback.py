@@ -13,6 +13,7 @@ credentials=loadCredentials()
 client=openai.OpenAI(api_key=credentials["openai_api_key"])
 logging.getLogger("httpx").setLevel(logging.WARNING) # supress logging for httpx on OpenAI API
 
+# Agents functions
 def greetingsAgent(productAttributes:dict) -> str:
     prompt=f"""
     Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
@@ -127,4 +128,50 @@ def gatherUserDataAgent(productAttributes:dict,userMsg:str,retry=None) -> str:
         temperature=1.2
     ).choices[0].message.content
     print(f"\n{Fore.LIGHTMAGENTA_EX}{Back.BLACK}[Gather User Data Agent]{Style.RESET_ALL}\n")
+    return agentResponse
+
+def sellerAgent(productAttributes:dict,userName:str,streamlitData=None,lastProductOffer:dict=None) -> str:
+    prompt=f"""
+    Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
+
+    Sobre a TMB:
+    "Que tal dar mais acesso ao seu infoproduto?
+    Para ter mais resultado, tudo o que você precisar fazer é dar oportunidade a quem precisa. 
+    Muitas pessoas gostariam de comprar o seu infoproduto, mas são conseguem por conta de meios de pagamentos engessados.
+    Mas quando existe uma forma de pagamento parcelada e facilitada, você vai mais longe. 
+    O boleto parcelado dá oportunidade a essas pessoas que querem acesso ao aprendizado e traz mais faturamento para o seu bolso!"
+
+    Você sabe que o usuário {userName} (chame-o de uma forma amigável, pelo primeiro nome) selecionou pelo streamlit o produto definido por:
+    {productAttributes}
+
+    Seu objetivo é dar continuidade ao processo de aquisição do produto pelo usuário. Você sabe que anteriormente ele forneceu os dados, então
+    deve começar agradecendo de uma forma amigável o usuário por fonecer e gerar uma mensagem atrativa ao processo de compra. Seu objetivo
+    é vender o produto da melhor forma possível.
+
+    Importante:
+        - Não explique novamente sobre a TMB e sobre os meios de pagamento, isso já foi esclarecido anteriormente
+        - Não explique novamente sobre o produto (ex: modalidade, carga horária, etc), esses dados já foram informados anteriormente para o usuário
+        - Seja o mais direcionado possível para a venda.
+        - O usuário já sabe do produto, então você apenas deve "insistir" (de uma forma amigável) para que ele compre
+        - regra de negócio: o desconto NUNCA deve exceder 10% do valor original, mas os descontos devem ser começados aos poucos
+        - termine com algo como "vamos efetuar a compra?" (porém nunca com essas palavras, seja amigável e tente sempre gerar uma nova abordagem final)
+        - nunca use "estou aqui para tirar dúvidas" ou coisas do tipo, você somente deve interagir com o usuário afim de fechar a aquisição do produto.
+
+    Por favor, retorne o desconto (percentual) e o valor no formato:
+    ```productoffer
+    - <valor_ofertado>,
+    - <desconto_condicionado_percentual>,
+    ```
+
+    para que o sistema seja capaz de coletar isso e aplicar no processo de compra. Além disso, explique ao usuário que ele pode informar quando deseja prosseguir com a compra.
+    """
+    agentResponse=client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{
+            "role":"user",
+            "content":prompt
+        }],
+        temperature=1.2
+    ).choices[0].message.content
+    print(f"\n{Fore.LIGHTMAGENTA_EX}{Back.BLACK}[Seller Agent]{Style.RESET_ALL}\n")
     return agentResponse

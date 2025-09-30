@@ -1,5 +1,4 @@
 from src.utils.load_credentials import loadCredentials
-import psycopg2.extras
 import pandas as pd
 import psycopg2
 import warnings
@@ -20,6 +19,7 @@ conn=psycopg2.connect(
 )
 conn.set_client_encoding('UTF8')
 
+# Database functions (SQL snippets)
 def retrieveProductData(conn=conn) -> dict:
     query="""
     select 
@@ -64,37 +64,65 @@ def retrieveCustomerData(document:str,conn=conn) -> dict:
         customer={}
         return customer
 
-def registerCustomerData(customerParams: dict, conn=conn):
+def registerCustomerData(customerParams:dict,conn=conn):
     """
     Insere um novo cliente na tabela 'clientes' do banco de dados PostgreSQL
     usando consultas parametrizadas para evitar SQL Injection.
     """
     sql="""
-        insert into clientes (
-            documento,nome,cep,nascimento,endereco_estado,
-            endereco_cidade,endereco_bairro,endereco_logradouro,email,
-            ativo,apelido
-        )
-        values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);
+    insert into clientes (
+        -- workflow fields
+        documento,
+        nome,
+        cep,
+        email,
+        nascimento,
+        endereco_estado,
+        endereco_cidade,
+        endereco_bairro,
+        endereco_logradouro,
+
+        -- required mocked fields
+        ativo,
+        apelido,
+        criado_em,
+        modificado_em
+    )
+    values(
+        -- workflow data
+        %s,
+        %s,
+        %s,
+        %s,
+        %s,
+        %s,
+        %s,
+        %s,
+        %s,
+        -- required mocked data
+        true,
+        'test',
+        now(),
+        now()
+    );
     """
     customerData=(
         customerParams["documento"],
         customerParams["nome"],
         customerParams["cep"],
+        customerParams["email"],
         customerParams["nascimento"],
         customerParams["endereco_estado"],
         customerParams["endereco_cidade"],
         customerParams["endereco_bairro"],
         customerParams["endereco_logradouro"],
-        customerParams["email"],
-        True,
-        "Teste"
     )
     try:
         with conn.cursor() as cur:
             cur.execute(sql,customerData)
             conn.commit()
+            return customerData
     except (Exception,psycopg2.DatabaseError) as error:
-        print(error)
         if conn is not None:
             conn.rollback()
+        return error
