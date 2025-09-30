@@ -31,7 +31,11 @@ def retrieveProductData(conn=conn) -> dict:
     from produtos prod
     left join tipo_produto tprod on tprod.id=prod.tipo_produto
     left join modalidade_produto mprod on mprod.id=prod.modalidade_produto
-    where lower(prod.produto) not like '%test%';
+    where 
+        prod.valor > 0
+        and lower(prod.produto) not like '%test%'
+        and length(trim(prod.produto)) - length(replace(trim(prod.produto), ' ', '')) = 1
+        and prod.produto not like '%adsgsdgsg%';
     """
     df=pd.read_sql(query,conn).sample(n=3)
     product=df.to_dict(orient="list")

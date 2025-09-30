@@ -1,108 +1,77 @@
-import threading
-import time
-from kafka import KafkaProducer, KafkaConsumer
-from kafka.admin import KafkaAdminClient, NewTopic
-from kafka.errors import TopicAlreadyExistsError
-import logging
+from src.agents.callback import greetingsAgent,requestUserPersonalInfoAgent,gatherUserDataAgent,sellerAgent
+from src.utils.helpers import validateDocument,extractUserData,extractSellerAgentText,extractProductOffer
+from src.utils.db_functions import retrieveCustomerData,registerCustomerData
+from colorama import Fore,Back,Style,init
+import pycep_correios
 
-# Configuração de logging para ver o que está acontecendo
-logging.basicConfig(level=logging.WARNING)
+# initialize colorama for terminal output
+init(autoreset=True)
 
-# --- Configurações ---
-BOOTSTRAP_SERVERS = '127.0.0.1:9092'
-TOPIC_NAME = 'meu-topico-de-teste'
-CONSUMER_GROUP_ID = 'meu-grupo-consumidor'
+# 1. Usuário seleciona produto
+desiredProduct={
+    "tipo_produto":"Infoproduto",
+    "modalidade_produto":"Online",
+    "nome_produto":"Licensed Steel Fish",
+    "valor_produto":1000.0,
+    "carga_horaria_produto":"40 horas"
+}
 
-# --- 1. Função para criar o tópico ---
-def criar_topico():
-    """Cria o tópico no Kafka se ele não existir."""
-    try:
-        admin_client = KafkaAdminClient(
-            bootstrap_servers=BOOTSTRAP_SERVERS,
-            client_id='meu-admin'
-        )
+# 2. LLM instrui e solicita CPF
+greetingsAgentResponse=greetingsAgent(productAttributes=desiredProduct)
+print(greetingsAgentResponse)
 
-        topic_list = [NewTopic(
-            name=TOPIC_NAME,
-            num_partitions=1,
-            replication_factor=1 # No seu docker-compose, você só tem 1 broker
-        )]
+# 3. Busca na base
+doc=input("\nInsira seu CPF: ")
+print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Validando CPF...\n")
+isDocumentValid=validateDocument(doc)
 
-        admin_client.create_topics(new_topics=topic_list, validate_only=False)
-        logging.info(f"Tópico '{TOPIC_NAME}' criado com sucesso! ✅")
-
-    except TopicAlreadyExistsError:
-        logging.warning(f"Tópico '{TOPIC_NAME}' já existe. 👍")
-    except Exception as e:
-        logging.error(f"Ocorreu um erro ao criar o tópico: {e}")
-    finally:
-        if 'admin_client' in locals():
-            admin_client.close()
-
-# --- 2. Função do Publisher (Producer) ---
-def publisher():
-    """Envia 5 mensagens para o tópico Kafka."""
-    # O value_serializer codifica as mensagens para bytes (formato que o Kafka espera)
-    producer = KafkaProducer(
-        bootstrap_servers=BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: v.encode('utf-8')
-    )
+if isDocumentValid==True:
+    print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} CPF Válido! Consultando registro na base...\n")
+    customerExists=retrieveCustomerData(document=doc)
     
-    logging.info("Publisher iniciado... enviando mensagens. 📬")
-    for i in range(5):
-        message = f"Olá, Kafka! Esta é a mensagem número {i+1}"
-        print(f"Enviando: '{message}'")
-        producer.send(TOPIC_NAME, value=message)
-        time.sleep(1) # Pequena pausa entre mensagens
-    
-    # Garante que todas as mensagens pendentes foram enviadas
-    producer.flush()
-    producer.close()
-    logging.info("Publisher finalizou o envio. 📦")
+    if bool(customerExists)==False: # método bool(dict) é False para dicionário vazio: se o CPF informado não existe, prosseguir com cadastro
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} CPF não encontrado. Iniciando processo para registrar novo cliente...\n")
 
-# --- 3. Função do Subscriber (Consumer) ---
-def subscriber():
-    """Ouve e processa mensagens do tópico Kafka."""
-    consumer = KafkaConsumer(
-        TOPIC_NAME,
-        bootstrap_servers=BOOTSTRAP_SERVERS,
-        group_id=CONSUMER_GROUP_ID,
-        # 'earliest' para consumir desde a primeira mensagem disponível no tópico
-        auto_offset_reset='earliest'
-    )
-    
-    logging.info("Subscriber iniciado... aguardando mensagens. 🎧")
-    try:
-        for message in consumer:
-            # message.value é em bytes, então decodificamos para string
-            print(f"Recebido: '{message.value.decode('utf-8')}' | "
-                  f"Partição: {message.partition} | Offset: {message.offset}")
-    except KeyboardInterrupt:
-        logging.info("Subscriber interrompido pelo usuário.")
-    finally:
-        consumer.close()
+        # solicita dados
+        requestUserPersonalInfoAgentResponse=requestUserPersonalInfoAgent(productAttributes=desiredProduct)
+        print(requestUserPersonalInfoAgentResponse)
+        userMsg=input("\nInsira seu nome completo, CEP, data de nascimento (formato Dia/Mês/Ano) e seu email para contato: ")
 
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Resposta Registrada! Coletando informações pessoais...\n")
+        gatherUserDataAgentResponse=gatherUserDataAgent(productAttributes=desiredProduct,userMsg=userMsg)
+        newUserData=extractUserData(agentResponse=gatherUserDataAgentResponse)
 
-if __name__ == "__main__":
-    # Passo 1: Garantir que o tópico existe
-    criar_topico()
-    
-    # Aguarda um momento para o tópico ser totalmente estabelecido no cluster
-    time.sleep(2)
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Consultado CEP...\n")
+        addressData=pycep_correios.get_address_from_cep(newUserData["cep"])
 
-    # Passo 2: Iniciar o consumidor em uma thread separada para que ele
-    # possa ouvir em segundo plano.
-    # Usamos daemon=True para que a thread seja encerrada quando o script principal terminar.
-    consumer_thread = threading.Thread(target=subscriber, daemon=True)
-    consumer_thread.start()
-    
-    # Aguarda um pouco para garantir que o consumidor se conectou ao tópico
-    time.sleep(3)
+        newCustomerParams={
+            "documento":doc,
+            "nome":newUserData["nome_completo"],
+            "cep":newUserData["cep"],
+            "email":newUserData["email"],
+            "nascimento":newUserData["data_de_nascimento"],
+            "endereco_estado":addressData["uf"],
+            "endereco_cidade":addressData["cidade"],
+            "endereco_bairro":addressData["bairro"],
+            "endereco_logradouro":addressData["logradouro"]
+        }
+        del newUserData,addressData # limpando memória
 
-    # Passo 3: Executar o produtor para enviar as mensagens
-    publisher()
-    
-    # Mantém o script principal vivo por mais alguns segundos para garantir
-    # que o consumidor processe a última mensagem antes do encerramento.
-    logging.info("Comunicação finalizada. O script será encerrado em 5 segundos.")
-    time.sleep(5)
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Dados coletados! Registrando novo cliente na base...\n")
+        print(registerCustomerData(newCustomerParams))
+
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Prosseguindo para compra...\n")
+        offer=sellerAgent(productAttributes=desiredProduct,userName=newCustomerParams["nome"])
+        print(extractSellerAgentText(output=offer))
+        print(extractProductOffer(output=offer))
+
+    else:
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} CPF existente! Recuperando informações do cliente...\n")
+        print(customerExists)
+
+        print(f"\n{Fore.LIGHTGREEN_EX}{Back.BLACK}[INFO]{Style.RESET_ALL} Prosseguindo para compra...\n")
+        offer=sellerAgent(productAttributes=desiredProduct,userName=customerExists["nome"])
+        print(extractSellerAgentText(output=offer))
+        print(extractProductOffer(output=offer))
+else:
+    print("\n[INFO] CPF Inválido!")

@@ -36,7 +36,7 @@ def wait_for_kafka(max_attempts=30):
     return False
 
 def create_kafka_topics():
-    topics = ["user-topic", "agent-topic", "product-topic"]
+    topics = ["user_msg","agent_msg","product_info","streamlit_events"]
     
     print("📝 Criando tópicos no Kafka...\n")
     

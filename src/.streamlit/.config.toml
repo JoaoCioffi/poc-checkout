@@ -1,7 +1,18 @@
 [theme]
-base="dark"
-borderColor="white"
-showWidgetBorder=false
+# Cor primária usada nos widgets interativos
+primaryColor="#00A884" # Um verde similar ao do WhatsApp
 
-[theme.sidebar]
-showWidgetBorder=true
+# Cor de fundo principal
+backgroundColor="#111B21" # Fundo escuro do WhatsApp
+
+# Cor de fundo da sidebar
+secondaryBackgroundColor="#202C33"
+
+# Cor do texto principal
+textColor="#E9EDEF"
+
+# Fonte principal
+font="sans serif"
+
+base="dark"
+showWidgetBorder=false

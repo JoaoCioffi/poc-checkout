@@ -70,7 +70,7 @@ def requestUserPersonalInfoAgent(productAttributes:dict) -> str:
     - data de nascimento,
     - email,
 
-    Peça todos esses dados (você pode usar esse parágrafo como exemplo: "preciso do seu nome completo, CEP, data de nascimento e email por favor").
+    Peça todos esses dados, listando, mas no início coloque, "por favor, preciso que me forneça esses dados" ou algo do tipo.
 
     Importante! Não comece por "Olá", pois você é a segunda etapa (pós informe do CPF pelo usuário), comece por "obrigado por informar". Você deve interagir normalmente
     como continuação das etapas do processo. Use sempre linguagem humana, em português PT-BR.
@@ -156,6 +156,7 @@ def sellerAgent(productAttributes:dict,userName:str,streamlitData=None,lastProdu
         - regra de negócio: o desconto NUNCA deve exceder 10% do valor original, mas os descontos devem ser começados aos poucos
         - termine com algo como "vamos efetuar a compra?" (porém nunca com essas palavras, seja amigável e tente sempre gerar uma nova abordagem final)
         - nunca use "estou aqui para tirar dúvidas" ou coisas do tipo, você somente deve interagir com o usuário afim de fechar a aquisição do produto.
+        - nunca comece com o disconto logo de início, isso deve ser liberado aos poucos
 
     Por favor, retorne o desconto (percentual) e o valor no formato:
     ```productoffer
