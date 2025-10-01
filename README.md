@@ -41,3 +41,10 @@ python run_service.py
 ```bash
 streamlit run app.py --server.port 9000 # please choose a different port if needed
 ```
+
+## 💻 Ngrok
+
+To expose externally:
+```bash
+ngrok http http://localhost:9000 # please choose a different port if needed (must be the same port on your streamlit app)
+````

@@ -73,14 +73,14 @@ def extractUserData(agentResponse:str) -> dict:
 
 def extractSellerAgentText(output:str) -> str:
     """
-    Extrai o texto da mensagem do agente vendedor, removendo o bloco productoffer.
+    Extrai o texto da mensagem do agente vendedor, removendo o bloco lastproductoffer.
     Args:
         output: String completa retornada pelo LLM
     Returns:
-        Texto da mensagem do agente sem o bloco productoffer
+        Texto da mensagem do agente sem o bloco lastproductoffer
     """
-    # Remove o bloco productoffer (incluindo as marcações ``` e o conteúdo)
-    pattern=r'```productoffer.*?```'
+    # Remove o bloco lastproductoffer (incluindo as marcações ``` e o conteúdo)
+    pattern=r'```lastproductoffer.*?```'
     agent_text=re.sub(pattern,'',output,flags=re.DOTALL)
     # Remove espaços em branco extras no final
     return agent_text.strip()
@@ -88,14 +88,14 @@ def extractSellerAgentText(output:str) -> str:
 
 def extractProductOffer(output:str) -> dict:
     """
-    Extrai os dados da oferta do produto do bloco productoffer.
+    Extrai os dados da oferta do produto do bloco lastproductoffer.
     Args:
         output: String completa retornada pelo LLM
     Returns:
         Dicionário com 'price' (float) e 'discount' (int), ou None se não encontrado
     """
-    # Padrão para capturar o conteúdo do bloco productoffer
-    pattern=r'```productoffer\s*\n\s*-\s*([\d.]+),\s*\n\s*-\s*(\d+),\s*\n```'
+    # Padrão para capturar o conteúdo do bloco lastproductoffer
+    pattern=r'```lastproductoffer\s*\n\s*-\s*([\d.]+),\s*\n\s*-\s*(\d+),\s*\n```'
     match=re.search(pattern, output)
     if match:
         price=float(match.group(1))

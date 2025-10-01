@@ -2,6 +2,7 @@ from src.utils.load_credentials import loadCredentials
 from colorama import Fore,Back,Style,init
 import openai
 import logging
+import json
 
 # initialize colorama for terminal output
 init(autoreset=True)
@@ -15,6 +16,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING) # supress logging for httpx
 
 # Agents functions
 def greetingsAgent(productAttributes:dict) -> str:
+    # ... (esta função permanece inalterada)
     prompt=f"""
     Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
 
@@ -50,6 +52,7 @@ def greetingsAgent(productAttributes:dict) -> str:
     return agentResponse
 
 def requestUserPersonalInfoAgent(productAttributes:dict) -> str:
+    # ... (esta função permanece inalterada)
     prompt=f"""
     Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
 
@@ -86,7 +89,8 @@ def requestUserPersonalInfoAgent(productAttributes:dict) -> str:
     print(f"\n{Fore.LIGHTMAGENTA_EX}{Back.BLACK}[Request User Personal Info Agent]{Style.RESET_ALL}\n")
     return agentResponse
 
-def gatherUserDataAgent(productAttributes:dict,userMsg:str,retry=None) -> str:
+def gatherUserDataAgent(productAttributes:dict,userMsg:str) -> str:
+    # ... (esta função permanece inalterada)
     prompt=f"""
     Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
 
@@ -130,41 +134,36 @@ def gatherUserDataAgent(productAttributes:dict,userMsg:str,retry=None) -> str:
     print(f"\n{Fore.LIGHTMAGENTA_EX}{Back.BLACK}[Gather User Data Agent]{Style.RESET_ALL}\n")
     return agentResponse
 
-def sellerAgent(productAttributes:dict,userName:str,streamlitData=None,lastProductOffer:dict=None) -> str:
+def sellerAgent(productAttributes:dict,userName:str,lastProductOffer:dict,acceptanceTime:float) -> str:
     prompt=f"""
-    Você é um agente LLM da TMB responsável por interagir com potenciais clientes compradores de infoprodutos.
+    Você é um agente de vendas da TMB, conversando com {userName} (chame-o pelo primeiro nome) sobre o produto: {productAttributes['nome_produto']}.
+    Seu objetivo é ser persuasivo e manter a conversa fluida para fechar a venda.
 
-    Sobre a TMB:
-    "Que tal dar mais acesso ao seu infoproduto?
-    Para ter mais resultado, tudo o que você precisar fazer é dar oportunidade a quem precisa. 
-    Muitas pessoas gostariam de comprar o seu infoproduto, mas são conseguem por conta de meios de pagamentos engessados.
-    Mas quando existe uma forma de pagamento parcelada e facilitada, você vai mais longe. 
-    O boleto parcelado dá oportunidade a essas pessoas que querem acesso ao aprendizado e traz mais faturamento para o seu bolso!"
+    **Situação Atual da Oferta:**
+    A oferta atual, já calculada e aprovada pela empresa, é a seguinte:
+    {json.dumps(lastProductOffer, indent=2, ensure_ascii=False)}
 
-    Você sabe que o usuário {userName} (chame-o de uma forma amigável, pelo primeiro nome) selecionou pelo streamlit o produto definido por:
-    {productAttributes}
+    Sua tarefa é apresentar esta oferta de forma criativa e convincente.
 
-    Seu objetivo é dar continuidade ao processo de aquisição do produto pelo usuário. Você sabe que anteriormente ele forneceu os dados, então
-    deve começar agradecendo de uma forma amigável o usuário por fonecer e gerar uma mensagem atrativa ao processo de compra. Seu objetivo
-    é vender o produto da melhor forma possível.
+    **Tom e Continuidade da Conversa:**
+    Use o campo "attempts" para entender o momento da conversa e adaptar seu tom:
+    - Se "attempts" for 0: Esta é a primeira abordagem de venda. Agradeça por ele ter fornecido os dados e apresente o produto e o valor inicial de forma atrativa.
+    - Se "attempts" for 1 ou 2: Ele já recusou a oferta anterior. Adote um tom de acompanhamento amigável. Ex: "Olá, {userName}! Notei que ainda não prosseguimos. Para te ajudar a decidir, preparamos uma condição especial..."
+    - Se "attempts" for maior que 2: O cliente está hesitante. Use um tom de reengajamento, talvez criando um senso de urgência ou destacando o principal benefício. Ex: "Oi, {userName}, ainda por aí? Não queria que você perdesse a chance de garantir sua vaga no {productAttributes['nome_produto']} com um benefício exclusivo que preparamos..."
 
-    Importante:
-        - Não explique novamente sobre a TMB e sobre os meios de pagamento, isso já foi esclarecido anteriormente
-        - Não explique novamente sobre o produto (ex: modalidade, carga horária, etc), esses dados já foram informados anteriormente para o usuário
-        - Seja o mais direcionado possível para a venda.
-        - O usuário já sabe do produto, então você apenas deve "insistir" (de uma forma amigável) para que ele compre
-        - regra de negócio: o desconto NUNCA deve exceder 10% do valor original, mas os descontos devem ser começados aos poucos
-        - termine com algo como "vamos efetuar a compra?" (porém nunca com essas palavras, seja amigável e tente sempre gerar uma nova abordagem final)
-        - nunca use "estou aqui para tirar dúvidas" ou coisas do tipo, você somente deve interagir com o usuário afim de fechar a aquisição do produto.
-        - nunca comece com o disconto logo de início, isso deve ser liberado aos poucos
+    **Instruções Cruciais:**
+    1.  **NÃO INVENTE VALORES:** Os valores de "offered_value" e "discount" no JSON que você recebeu são os valores corretos e finais. Use-os na sua mensagem para o cliente.
+    2.  **SEJA PERSUASIVO:** Crie uma mensagem que destaque o valor do produto e justifique a oferta. Conecte o desconto (se houver) a um benefício para o cliente.
+    3.  **MANTENHA A FLUIDEZ:** Sua resposta deve soar como a continuação da conversa, não como um novo começo.
+    4.  **REPLIQUE A SAÍDA:** Ao final da sua mensagem, você DEVE replicar os dados da oferta no bloco de código, exatamente como os recebeu.
 
-    Por favor, retorne o desconto (percentual) e o valor no formato:
-    ```productoffer
-    - <valor_ofertado>,
-    - <desconto_condicionado_percentual>,
+    **Formato de Saída Obrigatório:**
+    [Sua mensagem de venda criativa para o usuário]
+
+    ```lastproductoffer
+    - {lastProductOffer['offered_value']},
+    - {lastProductOffer['discount']},
     ```
-
-    para que o sistema seja capaz de coletar isso e aplicar no processo de compra. Além disso, explique ao usuário que ele pode informar quando deseja prosseguir com a compra.
     """
     agentResponse=client.chat.completions.create(
         model="gpt-4o-mini",

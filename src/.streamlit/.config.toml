@@ -5,7 +5,7 @@ primaryColor="#00A884" # Um verde similar ao do WhatsApp
 # Cor de fundo principal
 backgroundColor="#111B21" # Fundo escuro do WhatsApp
 
-# Cor de fundo da sidebar
+# Cor de fundo de elementos secundários
 secondaryBackgroundColor="#202C33"
 
 # Cor do texto principal
@@ -15,4 +15,3 @@ textColor="#E9EDEF"
 font="sans serif"
 
 base="dark"
-showWidgetBorder=false
